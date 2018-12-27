@@ -39,13 +39,13 @@ public class Reactor<T> implements Server<T> {
     public void serve() {
 	selectorThread = Thread.currentThread();
         try (Selector selector = Selector.open();
-                ServerSocketChannel serverSock = ServerSocketChannel.open()) {
+                ServerSocketChannel serverSock = ServerSocketChannel.open()) { // server-socket channel is created
 
             this.selector = selector; //just to be able to close
 
-            serverSock.bind(new InetSocketAddress(port));
+            serverSock.bind(new InetSocketAddress(port)); // entrance server port
             serverSock.configureBlocking(false);
-            serverSock.register(selector, SelectionKey.OP_ACCEPT);
+            serverSock.register(selector, SelectionKey.OP_ACCEPT); // client register with accept
 			System.out.println("Server started");
 
             while (!Thread.currentThread().isInterrupted()) {
