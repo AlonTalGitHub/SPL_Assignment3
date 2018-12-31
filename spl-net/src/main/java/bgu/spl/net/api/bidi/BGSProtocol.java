@@ -111,7 +111,6 @@ public class BGSProtocol<T> implements BidiMessagingProtocol<T> {
         int opCode = 3;
 
         boolean signed = false;
-
         Iterator iter = registeredClients.values().iterator();
         while (iter.hasNext()) { //Iterates through the users, checking if there is at least one which is logged in
             User user = (User) iter.next();
