@@ -42,10 +42,10 @@ public class BGSProtocol<T> implements BidiMessagingProtocol<T> {
             postProcess((Post) message);
         } else if (message instanceof PM) {
             pmProcess((PM) message);
-        } else if (message instanceof UserListCommand) {
-            userListProcess((UserListCommand) message);
-        } else if (message instanceof StatsCommand) {
-            statsProcess((StatsCommand) message);
+        } else if (message instanceof UserList) {
+            userListProcess((UserList) message);
+        } else if (message instanceof Stats) {
+            statsProcess((Stats) message);
         }
 
     }
@@ -83,7 +83,8 @@ public class BGSProtocol<T> implements BidiMessagingProtocol<T> {
 
             //if the password doesn't match or the user is already logged in
             User user = registeredClients.get(userName);
-            if (user.getPassword().compareTo(password) != 0 || user.isLoggedIn()) {
+            User clientUser = iteration(connectionId);
+            if (user.getPassword().compareTo(password) != 0 || user.isLoggedIn() || clientUser.isLoggedIn()) { //Either: the password doesn't match\the username is already logged in with another\same client\the client is logged in with another\same user
                 sendError(opCode);
             } else {
                 //Updating the client status to be logged in and updating the new connectionId
@@ -111,7 +112,7 @@ public class BGSProtocol<T> implements BidiMessagingProtocol<T> {
 
         boolean signed = false;
 
-        Iterator iter = registeredClients.keySet().iterator();
+        Iterator iter = registeredClients.values().iterator();
         while (iter.hasNext()) { //Iterates through the users, checking if there is at least one which is logged in
             User user = (User) iter.next();
             if (user.getConnectionId() == connectionId) { //If one of the current client's users is logged in
