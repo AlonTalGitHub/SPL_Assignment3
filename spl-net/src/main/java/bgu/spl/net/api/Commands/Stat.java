@@ -13,7 +13,7 @@ public class Stat extends Command {
         this.userName = userName;
     }
 
-    public String getUserName(){
+    public String getUserName() {
         return userName;
     }
 }
