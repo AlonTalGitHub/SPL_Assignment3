@@ -25,7 +25,7 @@ public class ACK {
     public String createMessage() {
 
         if (option) {
-            return "10" + opCode + " " + optional; //TODO: ACK the word or opcode?
+            return "10" + opCode + " " + optional;
         }
 
         return "10 " + opCode;

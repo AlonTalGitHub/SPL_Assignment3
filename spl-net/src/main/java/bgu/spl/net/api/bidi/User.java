@@ -12,7 +12,7 @@ public class User {
     private int connectionId;
     private HashSet<String> following = new HashSet<>();
     private HashSet<String> followers = new HashSet<>();
-    private ConcurrentLinkedQueue<String> waitingPosts = new ConcurrentLinkedQueue<>(); //TODO: concurrentLinkedQueue?
+    private ConcurrentLinkedQueue<String> waitingPosts = new ConcurrentLinkedQueue<>();
     private ConcurrentLinkedQueue<String> waitingPM = new ConcurrentLinkedQueue<>();
 
     //------Public Constructor------

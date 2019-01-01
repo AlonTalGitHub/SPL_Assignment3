@@ -1,7 +1,6 @@
 package bgu.spl.net.api.bidi;
 
 import bgu.spl.net.api.Commands.*;
-import bgu.spl.net.api.Commands.Command;
 
 import java.util.Iterator;
 import java.util.List;
@@ -13,7 +12,8 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
     //------Private Fields------
     private int connectionId;
     private Connections<T> connections;
-    private ConcurrentHashMap<String, User> registeredClients; //Mapped by their usernames TODO: concurrent?
+    private ConcurrentHashMap<String, User> registeredUsersByName; //Mapped by their usernames
+    private ConcurrentHashMap<Integer, String> registeredUsersById;
     private LinkedList<User> registeredClientsByOrder; //In order to know the order the user registered
     /*
     All posts and PMs are saved into a data structure.
@@ -27,8 +27,9 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
 
 
     //------Public Constructors------
-    public BidiMessagingProtocolImpl(ConcurrentHashMap<String, User> registeredClients, LinkedList<User> registeredClientsByOrder) {
-        this.registeredClients = registeredClients;
+    public BidiMessagingProtocolImpl(ConcurrentHashMap<String, User> registeredUsersByName, ConcurrentHashMap<Integer, String> registeredUsersById, LinkedList<User> registeredClientsByOrder) {
+        this.registeredUsersByName = registeredUsersByName;
+        this.registeredUsersById = registeredUsersById;
         this.registeredClientsByOrder = registeredClientsByOrder;
         this.postsAndPMs = new ConcurrentHashMap<>();
         postsAndPMs.put("posts", new ConcurrentHashMap<>());
@@ -115,11 +116,12 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
 
         synchronized (registerLock) { //Avoiding 2 clients registering with the same username
 
-            if (registeredClients.containsKey(userName)) { //Failing To Register
+            if (registeredUsersByName.containsKey(userName)) { //Failing To Register
                 sendError(opCode);
             } else { //Successfully Registered
                 User user = new User(userName, password, false, connectionId); //The connection id changes in every connection
-                registeredClients.put(userName, user);
+                registeredUsersByName.put(userName, user);
+                registeredUsersById.put(connectionId, userName);
                 registeredClientsByOrder.add(user);
                 sendACK(opCode);
             }
@@ -133,26 +135,29 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
         String userName = message.getUserName();
         String password = message.getPassWord();
 
-        if (registeredClients.containsKey(userName)) {
+        if (registeredUsersByName.containsKey(userName)) {
 
             //if the password doesn't match or the user is already logged in
-            User user = registeredClients.get(userName);
-            User clientUser = iteration(connectionId);
+            User user = registeredUsersByName.get(userName);
+            String requester = registeredUsersById.get(connectionId);
+            User clientUser = registeredUsersByName.get(requester);
             if (user.getPassword().compareTo(password) != 0 || user.isLoggedIn() || clientUser.isLoggedIn()) { //Either: the password doesn't match\the username is already logged in with another or the same client\the client is logged in with another or the same user
                 sendError(opCode);
             } else {
                 //Updating the client status to be logged in and updating the new connectionId
-                registeredClients.get(userName).updateConnectionId(connectionId);
-                registeredClients.get(userName).logIn();
+                registeredUsersById.remove(registeredUsersByName.get(userName).getConnectionId()); //The user received a new connection id
+                registeredUsersById.put(connectionId, userName);
+                registeredUsersByName.get(userName).updateConnectionId(connectionId);
+                registeredUsersByName.get(userName).logIn();
                 sendACK(opCode);
 
                 //Sending all the waiting posts and messages to the user
-                while (!registeredClients.get(userName).getWaitingPosts().isEmpty()) {
-                    String waitingPost = registeredClients.get(userName).getWaitingPosts().poll();
+                while (!registeredUsersByName.get(userName).getWaitingPosts().isEmpty()) {
+                    String waitingPost = registeredUsersByName.get(userName).getWaitingPosts().poll();
                     sendACK(opCode, waitingPost);
                 }
-                while (!registeredClients.get(userName).getWaitingPM().isEmpty()) {
-                    String waitingPM = registeredClients.get(userName).getWaitingPM().poll();
+                while (!registeredUsersByName.get(userName).getWaitingPM().isEmpty()) {
+                    String waitingPM = registeredUsersByName.get(userName).getWaitingPM().poll();
                     sendACK(opCode, waitingPM);
                 }
 
@@ -164,22 +169,13 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
 
         int opCode = 3;
         boolean signed = false;
-        Iterator iter = registeredClients.values().iterator();
-        while (iter.hasNext()) { //Iterates through the users, checking if there is at least one which is logged in
-            User user = (User) iter.next();
-            if (user.getConnectionId() == connectionId) { //If one of the current client's users is logged in
-                if (user.isLoggedIn()) {
-                    signed = true;
-                }
-            }
-        }
-
-        if (!signed) {
+        String requester = registeredUsersById.get(connectionId);
+        User user = registeredUsersByName.get(requester); //Finding who is the client that sent a command
+        if (!user.isLoggedIn()) {
             sendError(opCode);
         } else {
-            User user = iteration(connectionId); //Finding who is the client that sent a command
             sendACK(opCode);
-            registeredClients.get(user.getUserName()).logOut();
+            registeredUsersByName.get(user.getUserName()).logOut();
             shouldTerminate = true;
         }
     }
@@ -192,7 +188,8 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
         int followOrUn = message.getFollow();
         List<String> successfulUnOrFol = new LinkedList<>();
 
-        User follower = iteration(connectionId); //Finding who is the client that sent a command
+        String requester = registeredUsersById.get(connectionId);
+        User follower = registeredUsersByName.get(requester); //Finding who is the client that sent a command
         if (!follower.isLoggedIn()) { //User is not logged in
             sendError(opCode);
         } else {
@@ -203,7 +200,7 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
                         follower.getFollowing().add(toUnOrFol);
 
                         //Here we add the follower that started to follow x to x's followers list
-                        registeredClients.get(toUnOrFol).getFollowers().add(follower.getUserName());
+                        registeredUsersByName.get(toUnOrFol).getFollowers().add(follower.getUserName());
                         successfulUnOrFol.add(toUnOrFol);
                     }
                 }
@@ -214,7 +211,7 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
                         follower.getFollowing().remove(toUnOrFol);
 
                         //Here we remove the user that decided to unfollow x from x's followers list
-                        registeredClients.get(toUnOrFol).getFollowers().remove(follower.getUserName());
+                        registeredUsersByName.get(toUnOrFol).getFollowers().remove(follower.getUserName());
                         successfulUnOrFol.add(toUnOrFol);
                     }
                 }
@@ -237,9 +234,10 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
 
         int opCode = 5;
         List<String> tagged = message.getTaggedUsersList();
-        String content = message.getContent(); //TODO: making sure the content is not separated from the tagged list.
+        String content = message.getContent();
 
-        User poster = iteration(connectionId); //Finding who is the client that sent a command
+        String requester = registeredUsersById.get(connectionId);
+        User poster = registeredUsersByName.get(requester); //Finding who is the client that sent a command
         if (!poster.isLoggedIn()) {
             sendError(opCode);
         } else {
@@ -254,12 +252,12 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
             Iterator iterFol = poster.getFollowers().iterator();
             while (iterFol.hasNext()) {
                 String follower = (String) iterFol.next();
-                User followerUser = registeredClients.get(follower);
+                User followerUser = registeredUsersByName.get(follower);
                 if (!tagged.contains(follower)) { //Only if the follower is not tagged in the post. If he/she is tagged they will receive the post anyway.
                     if (followerUser.isLoggedIn()) {
                         sendNotification(followerUser.getConnectionId(), opCode, "Public", poster.getUserName(), content);
                     } else {
-                        registeredClients.get(follower).addWaitingPost(content);
+                        registeredUsersByName.get(follower).addWaitingPost(content);
                     }
                 }
             }
@@ -267,11 +265,11 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
             //Sending the post to all of the tagged users
             for (String taggedUser : tagged) {
                 taggedUser = taggedUser.substring(1); //Removing the @ so we can find the user
-                User user = registeredClients.get(taggedUser);
+                User user = registeredUsersByName.get(taggedUser);
                 if (user.isLoggedIn()) {
                     sendNotification(user.getConnectionId(), opCode, "Public", poster.getUserName(), content);
                 } else {
-                    registeredClients.get(taggedUser).addWaitingPost(content);
+                    registeredUsersByName.get(taggedUser).addWaitingPost(content);
                 }
             }
         }
@@ -283,8 +281,10 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
         String recipient = message.getUserName();
         String content = message.getContent();
 
-        User sender = iteration(connectionId); //Finding who is the client that sent a command
-        if (!sender.isLoggedIn() || !registeredClients.containsKey(recipient)) { //Either the sender is not logged in or the recipient is not registered
+
+        String requester = registeredUsersById.get(connectionId);
+        User sender = registeredUsersByName.get(requester); //Finding who is the client that sent a command
+        if (!sender.isLoggedIn() || !registeredUsersByName.containsKey(recipient)) { //Either the sender is not logged in or the recipient is not registered
             sendError(opCode);
         } else {
 
@@ -294,11 +294,11 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
             }
             postsAndPMs.get("PMs").get(sender.getUserName()).add(content);
 
-            User recipientUser = registeredClients.get(recipient);
+            User recipientUser = registeredUsersByName.get(recipient);
             if (recipientUser.isLoggedIn()) {
                 sendNotification(recipientUser.getConnectionId(), opCode, "PM", sender.getUserName(), content);
             } else {
-                registeredClients.get(recipient).addWaitingPM(content);
+                registeredUsersByName.get(recipient).addWaitingPM(content);
             }
         }
     }
@@ -306,8 +306,9 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
     private void userListProcess() {
 
         int opCode = 7;
-        User requester = iteration(connectionId); //Finding who is the client that sent a command
-        if (!requester.isLoggedIn()) {
+        String requester = registeredUsersById.get(connectionId);
+        User requesterU = registeredUsersByName.get(requester); //Finding who is the client that sent a command
+        if (!requesterU.isLoggedIn()) {
             sendError(opCode);
         } else {
             String userList = "";
@@ -327,11 +328,12 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
         int opCode = 8;
         String userName = message.getUserName();
 
-        User requester = iteration(connectionId); //Finding who is the client that sent a command
-        if (!requester.isLoggedIn() || !registeredClients.containsKey(userName)) { //Either the requester is not logged in or the requested is not registered
+        String requester = registeredUsersById.get(connectionId);
+        User requesterU = registeredUsersByName.get(requester); //Finding who is the client that sent a command
+        if (!requesterU.isLoggedIn() || !registeredUsersByName.containsKey(userName)) { //Either the requester is not logged in or the requested is not registered
             sendError(opCode);
         } else {
-            User user = registeredClients.get(userName);
+            User user = registeredUsersByName.get(userName);
             String stat = "";
             int numOfPosts = postsAndPMs.get("posts").get(userName).size(); //How many posts the requested user posted
             int numOfFollowers = user.getFollowers().size();
@@ -390,35 +392,6 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
         Notification notification = new Notification(opCode, kind, user, content);
         T notificationMessage = (T) notification.createMessage();
         connections.send(recipientConnectionId, notificationMessage);
-    }
-
-    /**
-     * Finding the @toFind in the registered users list
-     *
-     * @param toFind the user by connection that needs to be found
-     * @return the user that we found or null if he/she wasn't found
-     */
-    private User iteration(Integer toFind) {
-
-        //TODO: making sure each client receives a new connectionID
-        boolean found = false;
-        Iterator iterThroughRegistered = registeredClients.values().iterator();
-        User user = (User) iterThroughRegistered.next();
-        if (user.getConnectionId() == toFind) {
-            found = true;
-        }
-        while (iterThroughRegistered.hasNext() && !found) {
-            user = (User) iterThroughRegistered.next();
-            if (user.getConnectionId() == toFind) {
-                found = true;
-            }
-        }
-
-        if (!found) {
-            return null;
-        }
-
-        return user;
     }
 
 }

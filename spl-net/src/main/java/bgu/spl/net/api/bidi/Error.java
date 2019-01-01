@@ -11,7 +11,7 @@ public class Error {
     }
 
     //------Public Methods------
-    public String createMessage() { //TODO: return T???
+    public String createMessage() {
         return "11 " + opCode;
     }
 
