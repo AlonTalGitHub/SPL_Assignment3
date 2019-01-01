@@ -1,8 +1,6 @@
 package bgu.spl.net.api.bidi;
 
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class User {
@@ -16,7 +14,6 @@ public class User {
     private HashSet<String> followers = new HashSet<>();
     private ConcurrentLinkedQueue<String> waitingPosts = new ConcurrentLinkedQueue<>(); //TODO: concurrentLinkedQueue?
     private ConcurrentLinkedQueue<String> waitingPM = new ConcurrentLinkedQueue<>();
-    private List<String> personalPosts = new LinkedList<>();
 
     //------Public Constructor------
     public User(String userName, String password, boolean loggedIn, int connectionId) {
@@ -59,10 +56,6 @@ public class User {
         return this.waitingPM;
     }
 
-    public List<String> getPersonalPosts(){
-        return this.personalPosts;
-    }
-
     public void logIn(){
         this.loggedIn = true;
     }
@@ -77,12 +70,8 @@ public class User {
         this.waitingPM.add(pm);
     }
 
-    public void addPersonalPost(String post){
-        this.personalPosts.add(post);
-    }
-
-    public void updateConnectionId(int id) {
-        this.id = id;
+    public void updateConnectionId(int connectionId) {
+        this.connectionId = connectionId;
     }
 
 

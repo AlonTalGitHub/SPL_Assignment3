@@ -1,10 +1,9 @@
 package bgu.spl.net.api.bidi;
 
-public class Error<T> {
+public class Error {
 
     //------Private Fields------
     private int opCode;
-    private String message;
 
     //------Public Constructor------
     public Error(int opCode) {
@@ -13,7 +12,9 @@ public class Error<T> {
 
     //------Public Methods------
     public String createMessage() { //TODO: return T???
-        return "11" + opCode;
+        return "11 " + opCode;
     }
+
+
 
 }

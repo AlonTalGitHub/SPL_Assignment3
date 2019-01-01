@@ -8,7 +8,7 @@ public class ACK {
     private String optional;
     private boolean option;
 
-    //------Public Constructor------
+    //------Public Constructors------
     public ACK(int opCode, String optional) {
         this.opCode = opCode;
         this.option = true;
@@ -25,9 +25,9 @@ public class ACK {
     public String createMessage() {
 
         if (option) {
-            return "ACK " + opCode + " " + optional; //TODO: ACK the word or opcode?
+            return "10" + opCode + " " + optional; //TODO: ACK the word or opcode?
         }
 
-        return "ACK " + opCode;
+        return "10 " + opCode;
     }
 }

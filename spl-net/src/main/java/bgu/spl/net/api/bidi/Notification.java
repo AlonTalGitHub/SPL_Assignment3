@@ -19,7 +19,7 @@ public class Notification {
     //------Public Methods------
     public String createMessage() {
 
-        return "NOTIFICATION " + " " + opCode + " " + kind + " " + user + " " + content;
+        return "9 " + " " + opCode + " " + kind + " " + user + " " + content;
     }
 
 }
