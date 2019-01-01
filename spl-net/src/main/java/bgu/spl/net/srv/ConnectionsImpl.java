@@ -3,15 +3,16 @@ package bgu.spl.net.srv;
 import bgu.spl.net.api.bidi.Connections;
 
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ConnectionsImpl<T> implements Connections<T> {
 
     // Fields
-    private HashMap<Integer, ConnectionHandler<T>> connectionHandlerHashMap;
+    private ConcurrentHashMap<Integer, ConnectionHandler<T>> connectionHandlerHashMap;
 
     // Public constructor
-    public ConnectionsImpl() {
-        this.connectionHandlerHashMap = new HashMap<>(); //TODO check if need concurrent
+    public ConnectionsImpl(ConcurrentHashMap<Integer, ConnectionHandler<T>> connectionHandlerHashMap) {
+        this.connectionHandlerHashMap = connectionHandlerHashMap; //TODO check if need concurrent
     }
 
 

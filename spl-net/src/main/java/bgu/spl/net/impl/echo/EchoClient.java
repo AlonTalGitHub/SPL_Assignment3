@@ -12,7 +12,7 @@ public class EchoClient {
     public static void main(String[] args) throws IOException {
 
         if (args.length == 0) {
-            args = new String[]{"localhost", "hello"};
+            args = new String[]{"localhost", String.valueOf(Math.random())};
         }
 
         if (args.length < 2) {
@@ -30,9 +30,13 @@ public class EchoClient {
             out.newLine();
             out.flush();
 
-            System.out.println("awaiting response");
-            String line = in.readLine();
-            System.out.println("message from server: " + line);
+            while (true) {
+                System.out.println("awaiting response");
+                String line = in.readLine();
+                System.out.println("message from server: " + line);
+            }
+        }catch (IOException e){
+            System.out.println(e);
         }
     }
 }
