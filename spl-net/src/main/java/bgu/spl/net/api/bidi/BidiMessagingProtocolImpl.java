@@ -3,7 +3,6 @@ package bgu.spl.net.api.bidi;
 import bgu.spl.net.api.Commands.*;
 import bgu.spl.net.api.Commands.Command;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.LinkedList;
