@@ -83,7 +83,7 @@ public class MessageEncoderDecoderImpl implements MessageEncoderDecoder<Command>
                     int start8 = 2;
                     String statuser = popString(start8, endIndex(start8) - start8);
                     len = 0;
-                    return new STAT(statuser);
+                    return new Stat(statuser);
 
 
             }
