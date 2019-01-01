@@ -13,7 +13,7 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
     private int connectionId;
     private Connections<T> connections;
     private ConcurrentHashMap<String, User> registeredUsersByName; //Mapped by their usernames
-    private ConcurrentHashMap<Integer, String> registeredUsersById;
+    private ConcurrentHashMap<Integer, String> registeredUsersById; //Mapped by their connectionId
     private LinkedList<User> registeredClientsByOrder; //In order to know the order the user registered
     /*
     All posts and PMs are saved into a data structure.
@@ -24,7 +24,6 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
     private ConcurrentHashMap<String, ConcurrentHashMap<String, List<String>>> postsAndPMs;
     private final Object registerLock;
     private boolean shouldTerminate;
-
 
     //------Public Constructors------
     public BidiMessagingProtocolImpl(ConcurrentHashMap<String, User> registeredUsersByName, ConcurrentHashMap<Integer, String> registeredUsersById, LinkedList<User> registeredClientsByOrder) {
@@ -50,8 +49,7 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
 
         //TODO: synchronization ONLY IF NEEDED
 
-/*
-        int opCode = ((Command) message).getOpCode(); //TODO: Possibility: doing the command as an interface with getOpCode function
+        int opCode = ((Command) message).getOp_code();
 
         switch (opCode) {
             case 1:
@@ -79,27 +77,6 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
                 statProcess((Stat) message);
                 break;
         }
-
-*/
-
-        if (message instanceof Register) {
-            registerProcess((Register) message);
-        } else if (message instanceof Login) {
-            loginProcess((Login) message);
-        } else if (message instanceof Logout) {
-            logoutProcess();
-        } else if (message instanceof Follow) {
-            followUnfollowProcess((Follow) message);
-        } else if (message instanceof Post) {
-            postProcess((Post) message);
-        } else if (message instanceof PM) {
-            pmProcess((PM) message);
-        } else if (message instanceof UserList) {
-            userListProcess();
-        } else if (message instanceof Stat) {
-            statProcess((Stat) message);
-        }
-
     }
 
     @Override
@@ -387,7 +364,6 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
      * @param user                  who sent the post/PM
      * @param content               the content of the post/PM
      */
-
     private void sendNotification(int recipientConnectionId, int opCode, String kind, String user, String content) {
         Notification notification = new Notification(opCode, kind, user, content);
         T notificationMessage = (T) notification.createMessage();
