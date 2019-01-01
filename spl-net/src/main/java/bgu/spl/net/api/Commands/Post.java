@@ -7,7 +7,6 @@ import java.util.List;
 public class Post extends Command {
 
     // Fields
-    private int op_code;
     private String content;
     private List<String> taggedUsersList;
 

@@ -1,19 +1,13 @@
-package bgu.spl.net.impl.newsfeed;
+package bgu.spl.net.impl.echo;
 
 import bgu.spl.net.impl.rci.ObjectEncoderDecoder;
 import bgu.spl.net.impl.rci.RemoteCommandInvocationProtocol;
-import bgu.spl.net.srv.ConnectionHandler;
-import bgu.spl.net.srv.ConnectionsImpl;
 import bgu.spl.net.srv.Server;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 
-public class NewsFeedServerMain {
+public class EchoServer {
 
     public static void main(String[] args) {
-        NewsFeed feed = new NewsFeed(); //one shared object
-        HashMap<Integer, ConnectionHandler<String>> connectionHandlerHashMap = new LinkedHashMap<>();
 
 // you can use any server...
 //        Server.threadPerClient(
@@ -25,8 +19,8 @@ public class NewsFeedServerMain {
         Server.reactor(
                 Runtime.getRuntime().availableProcessors(),
                 7777, //port
-                () ->  new RemoteCommandInvocationProtocol<>(feed), //protocol factory
-                ObjectEncoderDecoder::new //message encoder decoder factory
+                EchoProtocol::new, //protocol factory
+                LineMessageEncoderDecoder::new //message encoder decoder factory
 
         ).serve();
 

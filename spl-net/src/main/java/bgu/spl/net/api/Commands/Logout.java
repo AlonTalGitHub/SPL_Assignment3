@@ -6,5 +6,6 @@ public class Logout extends Command {
 
     // Public Constructor
     public Logout() {
+        this.op_code = 3;
     }
 }
