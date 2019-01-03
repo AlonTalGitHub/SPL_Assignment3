@@ -6,22 +6,16 @@ import bgu.spl.net.api.bidi.Response;
 public class ACK extends Response {
 
     //------Private Fields------
-    private int rOpCode; //The opCode of the handled message
-    private String optional;
-    private boolean option;
+    protected int rOpCode; //The opCode of the handled message
+    protected boolean optional;
 
     //------Public Constructors------
-    public ACK(int rOpCode, String optional) {
+    public ACK() {
         this.op_code = 10; //The opCode of ACK
-        this.rOpCode = rOpCode; //The opCode of the handled message
-        this.option = true;
-        this.optional = optional;
     }
 
     public ACK(int rOpCode) {
-        this.op_code = 10; //The opCode of ACK
-        this.rOpCode = rOpCode; //The opCode of the handled message
-        this.option = false;
+        this.rOpCode = rOpCode;
     }
 
     //------Public Methods------
@@ -29,12 +23,5 @@ public class ACK extends Response {
         return rOpCode;
     }
 
-    public boolean isWithOptional() {
-        return option == true;
-    }
-
-    public String getOptional() {
-        return optional;
-    }
 
 }

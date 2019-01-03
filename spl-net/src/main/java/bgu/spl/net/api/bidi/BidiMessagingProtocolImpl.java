@@ -2,6 +2,9 @@ package bgu.spl.net.api.bidi;
 
 import bgu.spl.net.api.Commands.*;
 import bgu.spl.net.api.bidi.Responses.ACK;
+import bgu.spl.net.api.bidi.Responses.ACKs.FollowACK;
+import bgu.spl.net.api.bidi.Responses.ACKs.StatACK;
+import bgu.spl.net.api.bidi.Responses.ACKs.UserListACK;
 import bgu.spl.net.api.bidi.Responses.Error;
 import bgu.spl.net.api.bidi.Responses.Notification;
 
@@ -201,11 +204,7 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
             if (successfulUnOrFol.isEmpty()) { //No successful (un)follows
                 sendError(opCode);
             } else { //At least one successful (un)follow
-                String successes = "" + successfulUnOrFol.size();
-                for (String successful : successfulUnOrFol) {
-                    successes += " " + successful;
-                }
-                sendACK(opCode, successes);
+                sendFollowACK(successfulUnOrFol.size(), successfulUnOrFol);
             }
         }
 
@@ -295,17 +294,15 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
         int opCode = 7;
         String requester = registeredUsersById.get(connectionId);
         User requesterU = registeredUsersByName.get(requester); //Finding who is the client that sent a command
+        List<String> userList = new LinkedList<>();
         if (!requesterU.isLoggedIn()) {
             sendError(opCode);
         } else {
-            String userList = "";
-            userList += registeredClientsByOrder.size();
             for (int i = registeredClientsByOrder.size() - 1; i >= 0; i--) { //The registered clients from the first to the last because linked list is LIFO
                 User user = registeredClientsByOrder.get(i);
-                userList += " " + user.getUserName();
+                userList.add(user.getUserName());
             }
-
-            sendACK(opCode, userList);
+            sendUserListACK(registeredUsersByName.size(), userList);
         }
 
     }
@@ -321,12 +318,10 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
             sendError(opCode);
         } else {
             User user = registeredUsersByName.get(userName);
-            String stat = "";
             int numOfPosts = postsAndPMs.get("posts").get(userName).size(); //How many posts the requested user posted
             int numOfFollowers = user.getFollowers().size();
             int numOfFollowing = user.getFollowing().size();
-            stat += numOfPosts + " " + numOfFollowers + " " + numOfFollowing;
-            sendACK(opCode, stat);
+            sendStatACK(numOfPosts, numOfFollowers, numOfFollowing);
         }
     }
 
@@ -341,8 +336,9 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
         connections.send(connectionId, (T) error);
     }
 
+
     /**
-     * Sending an ACK with the corresponding opcode
+     * Sending an ACK with the corresponding opcode (not a plus-optional ACK)
      *
      * @param opCode the opCode of the current ACK
      */
@@ -352,14 +348,37 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
     }
 
     /**
-     * Sending an ACK with the corresponding opcode, and optional message
+     * Sending a follow ACK
      *
-     * @param opCode   the opCode of the current ACK
-     * @param optional an optional content added to the ACK
+     * @param numofUsers the number of users that were added/removed from the user follower list
+     * @param userNameList the users that were added/removed from the user follower list
      */
-    private void sendACK(int opCode, String optional) {
-        ACK ack = new ACK(opCode, optional);
-        connections.send(connectionId, (T) ack);
+    private void sendFollowACK(int numofUsers, List<String> userNameList) {
+        FollowACK followAck = new FollowACK(numofUsers, userNameList);
+        connections.send(connectionId, (T) followAck);
+    }
+
+    /**
+     * Sending a user list ACK
+     *
+     * @param numofUsers the number of registered users
+     * @param userNameList the registered users usernames
+     */
+    private void sendUserListACK(int numofUsers, List<String> userNameList) {
+        UserListACK userListACK = new UserListACK(numofUsers, userNameList);
+        connections.send(connectionId, (T) userListACK);
+    }
+
+    /**
+     * Sending a stat ACK
+     *
+     * @param numOfPosts the number of posts the requested user posted
+     * @param numOfFollowers the number of followers the requested user has
+     * @param numOfFollowing the number of users the requested user following
+     */
+    private void sendStatACK(int numOfPosts, int numOfFollowers, int numOfFollowing) {
+        StatACK statACK = new StatACK(numOfPosts, numOfFollowers, numOfFollowing);
+        connections.send(connectionId, (T) statACK);
     }
 
     /**
