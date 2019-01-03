@@ -1,6 +1,6 @@
-package bgu.spl.net.api.bidi.Responses.ACKs;
+package bgu.spl.net.api.Commands.ACKs;
 
-import bgu.spl.net.api.bidi.Responses.ACK;
+import bgu.spl.net.api.Commands.ACK;
 
 import java.util.List;
 

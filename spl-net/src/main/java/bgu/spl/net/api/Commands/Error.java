@@ -1,8 +1,8 @@
-package bgu.spl.net.api.bidi.Responses;
+package bgu.spl.net.api.Commands;
 
-import bgu.spl.net.api.bidi.Response;
+import bgu.spl.net.api.bidi.Command;
 
-public class Error extends Response {
+public class Error extends Command {
 
     //------Private Fields------
     private int rOpCode;

@@ -1,9 +1,9 @@
 
-package bgu.spl.net.api.bidi.Responses;
+package bgu.spl.net.api.Commands;
 
-import bgu.spl.net.api.bidi.Response;
+import bgu.spl.net.api.bidi.Command;
 
-public class ACK extends Response {
+public class ACK extends Command {
 
     //------Private Fields------
     protected int rOpCode; //The opCode of the handled message

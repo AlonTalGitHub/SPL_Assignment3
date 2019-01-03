@@ -1,8 +1,8 @@
-package bgu.spl.net.api.bidi.Responses;
+package bgu.spl.net.api.Commands;
 
-import bgu.spl.net.api.bidi.Response;
+import bgu.spl.net.api.bidi.Command;
 
-public class Notification extends Response {
+public class Notification extends Command {
 
     //------Private Fields------
     private int rOpCode;
