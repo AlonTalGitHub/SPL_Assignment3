@@ -1,5 +1,7 @@
 package bgu.spl.net.api.bidi;
 
+import javafx.util.Pair;
+
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -12,8 +14,8 @@ public class User {
     private int connectionId;
     private HashSet<String> following = new HashSet<>();
     private HashSet<String> followers = new HashSet<>();
-    private ConcurrentLinkedQueue<String> waitingPosts = new ConcurrentLinkedQueue<>();
-    private ConcurrentLinkedQueue<String> waitingPM = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<Pair<String, String>> waitingPosts = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<Pair<String, String>> waitingPM = new ConcurrentLinkedQueue<>();
 
     //------Public Constructor------
     public User(String userName, String password, boolean loggedIn, int connectionId) {
@@ -48,11 +50,11 @@ public class User {
         return this.followers;
     }
 
-    public ConcurrentLinkedQueue<String> getWaitingPosts(){
+    public ConcurrentLinkedQueue<Pair<String, String>> getWaitingPosts(){
         return this.waitingPosts;
     }
 
-    public ConcurrentLinkedQueue<String> getWaitingPM(){
+    public ConcurrentLinkedQueue<Pair<String, String>> getWaitingPM(){
         return this.waitingPM;
     }
 
@@ -64,10 +66,10 @@ public class User {
         this.loggedIn = false;
     }
 
-    public void addWaitingPost(String post){ this.waitingPosts.add(post); }
+    public void addWaitingPost(String post, String sender){ this.waitingPosts.add(new Pair(post, sender)); }
 
-    public void addWaitingPM(String pm){
-        this.waitingPM.add(pm);
+    public void addWaitingPM(String pm, String sender){
+        this.waitingPM.add(new Pair(pm, sender));
     }
 
     public void updateConnectionId(int connectionId) {

@@ -1,6 +1,7 @@
 package bgu.spl.net.api.bidi;
 
 import bgu.spl.net.api.Commands.*;
+import javafx.util.Pair;
 
 import java.util.Iterator;
 import java.util.List;
@@ -130,19 +131,19 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
 
                 //Sending all the waiting posts and messages to the user
                 while (!registeredUsersByName.get(userName).getWaitingPosts().isEmpty()) {
-                    String waitingPost = registeredUsersByName.get(userName).getWaitingPosts().poll();
-                    sendACK(opCode, waitingPost);
+                    Pair waitingPost = registeredUsersByName.get(userName).getWaitingPosts().poll();
+                    sendNotification(connectionId, 5, 1, (String) waitingPost.getKey(), (String) waitingPost.getValue());
                 }
                 while (!registeredUsersByName.get(userName).getWaitingPM().isEmpty()) {
-                    String waitingPM = registeredUsersByName.get(userName).getWaitingPM().poll();
-                    sendACK(opCode, waitingPM);
+                    Pair waitingPM = registeredUsersByName.get(userName).getWaitingPM().poll();
+                    sendNotification(connectionId, 6, 0, (String) waitingPM.getKey(), (String) waitingPM.getValue());
                 }
 
             }
         }
     }
 
-    private void logoutProcess() {
+    private void logoutProcess() { //TODO: using disconnect???!?!
 
         int opCode = 3;
         boolean signed = false;
@@ -209,9 +210,15 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
 
     private void postProcess(Post message) {
 
+        //TODO: Making sure that the tagged users are received also from the content itself - not just the beggining!!!
         int opCode = 5;
         List<String> tagged = message.getTaggedUsersList();
         String content = message.getContent();
+        List<String> taggedOnce = new LinkedList<>();
+        for(String tag : tagged) { //Maybe the user is tagged twice or more, but we want to send only one message to him/her.
+            if(!taggedOnce.contains(tag))
+                taggedOnce.add(tag);
+        }
 
         String requester = registeredUsersById.get(connectionId);
         User poster = registeredUsersByName.get(requester); //Finding who is the client that sent a command
@@ -230,23 +237,23 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
             while (iterFol.hasNext()) {
                 String follower = (String) iterFol.next();
                 User followerUser = registeredUsersByName.get(follower);
-                if (!tagged.contains(follower)) { //Only if the follower is not tagged in the post. If he/she is tagged they will receive the post anyway.
+                if (!taggedOnce.contains(follower)) { //Only if the follower is not tagged in the post. If he/she is tagged they will receive the post anyway.
                     if (followerUser.isLoggedIn()) {
-                        sendNotification(followerUser.getConnectionId(), opCode, "Public", poster.getUserName(), content);
+                        sendNotification(followerUser.getConnectionId(), opCode, 1, poster.getUserName(), content);
                     } else {
-                        registeredUsersByName.get(follower).addWaitingPost(content);
+                        registeredUsersByName.get(follower).addWaitingPost(content, requester);
                     }
                 }
             }
 
             //Sending the post to all of the tagged users
-            for (String taggedUser : tagged) {
+            for (String taggedUser : taggedOnce) {
                 taggedUser = taggedUser.substring(1); //Removing the @ so we can find the user
                 User user = registeredUsersByName.get(taggedUser);
                 if (user.isLoggedIn()) {
-                    sendNotification(user.getConnectionId(), opCode, "Public", poster.getUserName(), content);
+                    sendNotification(user.getConnectionId(), opCode, 1, poster.getUserName(), content);
                 } else {
-                    registeredUsersByName.get(taggedUser).addWaitingPost(content);
+                    registeredUsersByName.get(taggedUser).addWaitingPost(content, requester);
                 }
             }
         }
@@ -273,9 +280,9 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
 
             User recipientUser = registeredUsersByName.get(recipient);
             if (recipientUser.isLoggedIn()) {
-                sendNotification(recipientUser.getConnectionId(), opCode, "PM", sender.getUserName(), content);
+                sendNotification(recipientUser.getConnectionId(), opCode, 0, sender.getUserName(), content);
             } else {
-                registeredUsersByName.get(recipient).addWaitingPM(content);
+                registeredUsersByName.get(recipient).addWaitingPM(content, requester);
             }
         }
     }
@@ -328,8 +335,7 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
      */
     private void sendError(int opCode) {
         Error error = new Error(opCode);
-        T errorMessage = (T) error.createMessage();
-        connections.send(connectionId, errorMessage);
+        connections.send(connectionId, (T) error);
     }
 
     /**
@@ -339,8 +345,7 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
      */
     private void sendACK(int opCode) {
         ACK ack = new ACK(opCode);
-        T ackMessage = (T) ack.createMessage();
-        connections.send(connectionId, ackMessage);
+        connections.send(connectionId, (T) ack);
     }
 
     /**
@@ -351,8 +356,7 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
      */
     private void sendACK(int opCode, String optional) {
         ACK ack = new ACK(opCode, optional);
-        T ackMessage = (T) ack.createMessage();
-        connections.send(connectionId, ackMessage);
+        connections.send(connectionId, (T) ack);
     }
 
     /**
@@ -364,10 +368,9 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
      * @param user                  who sent the post/PM
      * @param content               the content of the post/PM
      */
-    private void sendNotification(int recipientConnectionId, int opCode, String kind, String user, String content) {
+    private void sendNotification(int recipientConnectionId, int opCode, int kind, String user, String content) {
         Notification notification = new Notification(opCode, kind, user, content);
-        T notificationMessage = (T) notification.createMessage();
-        connections.send(recipientConnectionId, notificationMessage);
+        connections.send(recipientConnectionId, (T) notification);
     }
 
 }

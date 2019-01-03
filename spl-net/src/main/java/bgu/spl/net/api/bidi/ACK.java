@@ -1,33 +1,38 @@
 
 package bgu.spl.net.api.bidi;
 
-public class ACK {
+public class ACK extends ServerToClient {
 
     //------Private Fields------
-    private int opCode;
+    private int rOpCode; //The opCode of the handled message
     private String optional;
     private boolean option;
 
     //------Public Constructors------
-    public ACK(int opCode, String optional) {
-        this.opCode = opCode;
+    public ACK(int rOpCode, String optional) {
+        this.op_code = 10; //The opCode of ACK
+        this.rOpCode = rOpCode; //The opCode of the handled message
         this.option = true;
         this.optional = optional;
     }
 
     public ACK(int opCode) {
-        this.opCode = opCode;
+        this.op_code = 10; //The opCode of ACK
+        this.rOpCode = rOpCode; //The opCode of the handled message
         this.option = false;
     }
 
     //------Public Methods------
-
-    public String createMessage() {
-
-        if (option) {
-            return "10" + opCode + " " + optional;
-        }
-
-        return "10 " + opCode;
+    public int getrOpCode() {
+        return rOpCode;
     }
+
+    public boolean isWithOptional() {
+        return option == true;
+    }
+
+    public String getOptional() {
+        return optional;
+    }
+
 }

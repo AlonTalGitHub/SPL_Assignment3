@@ -1,18 +1,19 @@
 package bgu.spl.net.api.bidi;
 
-public class Error {
+public class Error extends ServerToClient{
 
     //------Private Fields------
-    private int opCode;
+    private int rOpCode;
 
     //------Public Constructor------
-    public Error(int opCode) {
-        this.opCode = opCode;
+    public Error(int rOpCode) {
+        this.op_code = 11; //The opCode of ERROR
+        this.rOpCode = rOpCode; //The opCode of the handled message
     }
 
     //------Public Methods------
-    public String createMessage() {
-        return "11 " + opCode;
+    public int getrOpCode(){
+        return rOpCode;
     }
 
 
