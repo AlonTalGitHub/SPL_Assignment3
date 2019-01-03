@@ -4,7 +4,6 @@ import bgu.spl.net.api.Commands.*;
 import bgu.spl.net.api.bidi.Responses.ACK;
 import bgu.spl.net.api.bidi.Responses.Error;
 import bgu.spl.net.api.bidi.Responses.Notification;
-import javafx.util.Pair;
 
 import java.util.Iterator;
 import java.util.List;
@@ -134,12 +133,13 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
 
                 //Sending all the waiting posts and messages to the user
                 while (!registeredUsersByName.get(userName).getWaitingPosts().isEmpty()) {
-                    Pair waitingPost = registeredUsersByName.get(userName).getWaitingPosts().poll();
-                    sendNotification(connectionId, 5, 1, (String) waitingPost.getKey(), (String) waitingPost.getValue());
+                    String[] waitingPost = registeredUsersByName.get(userName).getWaitingPosts().poll();
+                    sendNotification(connectionId, 5, 1, (String) waitingPost[0], (String) waitingPost[1]);
                 }
+
                 while (!registeredUsersByName.get(userName).getWaitingPM().isEmpty()) {
-                    Pair waitingPM = registeredUsersByName.get(userName).getWaitingPM().poll();
-                    sendNotification(connectionId, 6, 0, (String) waitingPM.getKey(), (String) waitingPM.getValue());
+                    String[] waitingPM = registeredUsersByName.get(userName).getWaitingPM().poll();
+                    sendNotification(connectionId, 6, 0, (String) waitingPM[0], (String) waitingPM[1]);
                 }
 
             }
