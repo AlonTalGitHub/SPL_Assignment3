@@ -1,6 +1,9 @@
 package bgu.spl.net.api.bidi;
 
 import bgu.spl.net.api.Commands.*;
+import bgu.spl.net.api.bidi.Responses.ACK;
+import bgu.spl.net.api.bidi.Responses.Error;
+import bgu.spl.net.api.bidi.Responses.Notification;
 import javafx.util.Pair;
 
 import java.util.Iterator;

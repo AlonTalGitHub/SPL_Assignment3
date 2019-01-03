@@ -1,7 +1,9 @@
 
-package bgu.spl.net.api.bidi;
+package bgu.spl.net.api.bidi.Responses;
 
-public class ACK extends ServerToClient {
+import bgu.spl.net.api.bidi.Response;
+
+public class ACK extends Response {
 
     //------Private Fields------
     private int rOpCode; //The opCode of the handled message
@@ -16,7 +18,7 @@ public class ACK extends ServerToClient {
         this.optional = optional;
     }
 
-    public ACK(int opCode) {
+    public ACK(int rOpCode) {
         this.op_code = 10; //The opCode of ACK
         this.rOpCode = rOpCode; //The opCode of the handled message
         this.option = false;
