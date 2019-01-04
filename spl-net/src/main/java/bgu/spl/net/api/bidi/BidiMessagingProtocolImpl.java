@@ -1,12 +1,11 @@
 package bgu.spl.net.api.bidi;
 
 import bgu.spl.net.api.Commands.*;
-import bgu.spl.net.api.bidi.Responses.ACK;
-import bgu.spl.net.api.bidi.Responses.ACKs.FollowACK;
-import bgu.spl.net.api.bidi.Responses.ACKs.StatACK;
-import bgu.spl.net.api.bidi.Responses.ACKs.UserListACK;
-import bgu.spl.net.api.bidi.Responses.Error;
-import bgu.spl.net.api.bidi.Responses.Notification;
+import bgu.spl.net.api.Commands.ACKs.FollowACK;
+import bgu.spl.net.api.Commands.ACKs.StatACK;
+import bgu.spl.net.api.Commands.ACKs.UserListACK;
+import bgu.spl.net.api.Commands.Error;
+
 
 import java.util.Iterator;
 import java.util.List;
@@ -385,13 +384,12 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
      * Sending a NOTIFICATION with the corresponding opcode, and either it is private or public, who sent the post/message, and the content
      *
      * @param recipientConnectionId to whom sending the NOTIFICATION
-     * @param opCode                the opCode of the current NOTIFICATION
      * @param kind                  is it a post or a PM
      * @param user                  who sent the post/PM
      * @param content               the content of the post/PM
      */
     private void sendNotification(int recipientConnectionId, int opCode, int kind, String user, String content) {
-        Notification notification = new Notification(opCode, kind, user, content);
+        Notification notification = new Notification(kind, user, content);
         connections.send(recipientConnectionId, (T) notification);
     }
 
