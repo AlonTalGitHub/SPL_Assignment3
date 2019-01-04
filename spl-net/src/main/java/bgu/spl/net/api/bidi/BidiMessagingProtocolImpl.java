@@ -1,11 +1,12 @@
 package bgu.spl.net.api.bidi;
 
 import bgu.spl.net.api.Commands.*;
+import bgu.spl.net.api.Commands.ACK;
 import bgu.spl.net.api.Commands.ACKs.FollowACK;
 import bgu.spl.net.api.Commands.ACKs.StatACK;
 import bgu.spl.net.api.Commands.ACKs.UserListACK;
 import bgu.spl.net.api.Commands.Error;
-
+import bgu.spl.net.api.Commands.Notification;
 
 import java.util.Iterator;
 import java.util.List;
@@ -136,12 +137,12 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
                 //Sending all the waiting posts and messages to the user
                 while (!registeredUsersByName.get(userName).getWaitingPosts().isEmpty()) {
                     String[] waitingPost = registeredUsersByName.get(userName).getWaitingPosts().poll();
-                    sendNotification(connectionId, 5, 1, (String) waitingPost[0], (String) waitingPost[1]);
+                    sendNotification(connectionId, 1, (String) waitingPost[0], (String) waitingPost[1]);
                 }
 
                 while (!registeredUsersByName.get(userName).getWaitingPM().isEmpty()) {
                     String[] waitingPM = registeredUsersByName.get(userName).getWaitingPM().poll();
-                    sendNotification(connectionId, 6, 0, (String) waitingPM[0], (String) waitingPM[1]);
+                    sendNotification(connectionId, 0, (String) waitingPM[0], (String) waitingPM[1]);
                 }
 
             }
@@ -159,6 +160,7 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
         } else {
             sendACK(opCode);
             registeredUsersByName.get(user.getUserName()).logOut();
+            connections.disconnect(connectionId); //TODO: added
             shouldTerminate = true;
         }
     }
@@ -240,7 +242,7 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
                 User followerUser = registeredUsersByName.get(follower);
                 if (!taggedOnce.contains(follower)) { //Only if the follower is not tagged in the post. If he/she is tagged they will receive the post anyway.
                     if (followerUser.isLoggedIn()) {
-                        sendNotification(followerUser.getConnectionId(), opCode, 1, poster.getUserName(), content);
+                        sendNotification(followerUser.getConnectionId(), 1, poster.getUserName(), content);
                     } else {
                         registeredUsersByName.get(follower).addWaitingPost(content, requester);
                     }
@@ -252,7 +254,7 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
                 taggedUser = taggedUser.substring(1); //Removing the @ so we can find the user
                 User user = registeredUsersByName.get(taggedUser);
                 if (user.isLoggedIn()) {
-                    sendNotification(user.getConnectionId(), opCode, 1, poster.getUserName(), content);
+                    sendNotification(user.getConnectionId(), 1, poster.getUserName(), content);
                 } else {
                     registeredUsersByName.get(taggedUser).addWaitingPost(content, requester);
                 }
@@ -281,7 +283,7 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
 
             User recipientUser = registeredUsersByName.get(recipient);
             if (recipientUser.isLoggedIn()) {
-                sendNotification(recipientUser.getConnectionId(), opCode, 0, sender.getUserName(), content);
+                sendNotification(recipientUser.getConnectionId(), 0, sender.getUserName(), content);
             } else {
                 registeredUsersByName.get(recipient).addWaitingPM(content, requester);
             }
@@ -388,7 +390,7 @@ public class BidiMessagingProtocolImpl<T> implements BidiMessagingProtocol<T> {
      * @param user                  who sent the post/PM
      * @param content               the content of the post/PM
      */
-    private void sendNotification(int recipientConnectionId, int opCode, int kind, String user, String content) {
+    private void sendNotification(int recipientConnectionId, int kind, String user, String content) {
         Notification notification = new Notification(kind, user, content);
         connections.send(recipientConnectionId, (T) notification);
     }
