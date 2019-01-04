@@ -5,7 +5,6 @@ import bgu.spl.net.api.bidi.Command;
 public class Login extends Command {
 
     // Fields
-    private int op_code;
     private String userName;
     private String passWord;
 

@@ -7,7 +7,6 @@ public class ACK extends Command {
 
     //------Private Fields------
     protected int rOpCode; //The opCode of the handled message
-    protected boolean optional;
 
     //------Public Constructors------
     public ACK() {

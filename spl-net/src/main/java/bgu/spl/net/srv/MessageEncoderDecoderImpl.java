@@ -1,9 +1,12 @@
 package bgu.spl.net.srv;
 
 import bgu.spl.net.api.Commands.*;
+import bgu.spl.net.api.Commands.ACKs.FollowACK;
+import bgu.spl.net.api.Commands.ACKs.StatACK;
+import bgu.spl.net.api.Commands.ACKs.UserListACK;
+import bgu.spl.net.api.Commands.Error;
 import bgu.spl.net.api.MessageEncoderDecoder;
 import bgu.spl.net.api.bidi.Command;
-
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,6 +99,96 @@ public class MessageEncoderDecoderImpl implements MessageEncoderDecoder<Command>
 
     @Override
     public byte[] encode(Command message) {
+
+        int intOpcode = message.getOp_code();
+        short shortOpcode = (short) intOpcode;
+
+        switch (intOpcode) {
+
+            case 9: // Notification
+                buildBytesArr(shortToBytes(shortOpcode));
+                int kind = ((Notification) message).getKind();
+                buildBytesArr(shortToBytes((short) kind));
+
+                String postingUser = ((Notification) message).getUser();
+                buildBytesArr(postingUser.getBytes());
+                pushByte((byte) 0);
+
+                String content = ((Notification) message).getContent();
+                buildBytesArr(content.getBytes());
+                pushByte((byte) 0);
+
+                len = 0;
+                return bytes;
+
+            case 10: // ACKs
+                int intOpcode2 = ((ACK) message).getrOpCode();
+
+                switch (intOpcode2) {
+                    case 4: // FollowACK
+                        List<Short> opShorts = splitIntToShort(intOpcode);
+                        for (short digit : opShorts){
+                            pushByte((byte) digit);
+                        }
+                        buildBytesArr(shortToBytes((short) intOpcode2));
+                        int numOfUsers = ((FollowACK) message).getNumOfUsers();
+                        buildBytesArr(shortToBytes((short) numOfUsers));
+                        List<String> userNameList = ((FollowACK) message).getUserNameList();
+
+                        for(String name : userNameList){
+                            buildBytesArr(name.getBytes());
+                            pushByte((byte) 0);
+                        }
+
+                        len = 0;
+                        return bytes;
+
+                    case 7: // UserListACK
+                        List<Short> opShorts1 = splitIntToShort(intOpcode);
+                        for (short digit : opShorts1){
+                            pushByte((byte) digit);
+                        }
+                        buildBytesArr(shortToBytes((short) intOpcode2));
+                        int numOfUsers2 = ((UserListACK) message).getNumOfUsers();
+                        buildBytesArr(shortToBytes((short) numOfUsers2));
+                        List<String> userNameList2 = ((UserListACK) message).getUserNameList();
+
+                        for(String name : userNameList2){
+                            buildBytesArr(name.getBytes());
+                            pushByte((byte) 0);
+                        }
+
+                        len = 0;
+                        return bytes;
+
+                    case 8: // StatACK
+                        List<Short> opShorts2 = splitIntToShort(intOpcode);
+                        for (short digit : opShorts2){
+                            pushByte((byte) digit);
+                        }
+                        buildBytesArr(shortToBytes((short) intOpcode2));
+                        int numOfPosts = ((StatACK) message).getNumOfPosts();
+                        buildBytesArr(shortToBytes((short) numOfPosts));
+                        int numOfFollowers = ((StatACK) message).getNumOfFollowers();
+                        buildBytesArr(shortToBytes((short) numOfFollowers));
+                        int numOfFollowing = ((StatACK) message).getNumOfFollowing();
+                        buildBytesArr(shortToBytes((short) numOfFollowing));
+
+                        len = 0;
+                        return bytes;
+                }
+
+            case 11: // Error
+                List<Short> opShorts = splitIntToShort(intOpcode);
+                for (short digit : opShorts){
+                    pushByte((byte) digit);
+                }
+                int errorOp = ((Error) message).getrOpCode();
+                buildBytesArr(shortToBytes((short) errorOp));
+
+                len = 0;
+                return bytes;
+        }
         return new byte[0];
     }
 
@@ -106,6 +199,12 @@ public class MessageEncoderDecoderImpl implements MessageEncoderDecoder<Command>
         }
 
         bytes[len++] = nextByte;
+    }
+
+    private void buildBytesArr(byte [] bytesArr) {
+        for(byte b : bytesArr){
+            pushByte(b);
+        }
     }
 
     private String popString(int start , int len) {
@@ -121,6 +220,25 @@ public class MessageEncoderDecoderImpl implements MessageEncoderDecoder<Command>
 //        short result = (short)(((byteArr[0] & 0xff) << 8));
 //        result += (short)(byteArr[1] & 0xff);
 //        return result;
+    }
+
+    private byte[] shortToBytes(short num)
+    {
+        byte[] bytesArr = new byte[2];
+        bytesArr[0] = (byte)((num >> 8) & 0xFF);
+        bytesArr[1] = (byte)(num & 0xFF);
+        return bytesArr;
+    }
+
+    private List<Short> splitIntToShort(int num){
+        short units = (short)(num % 10);
+        short tens = (short)(num / 10);
+        List<Short> shorts = new LinkedList<>();
+        shorts.add(tens);
+        shorts.add(units);
+
+
+        return shorts;
     }
 
     private int endIndex(int start){
@@ -163,13 +281,20 @@ public class MessageEncoderDecoderImpl implements MessageEncoderDecoder<Command>
 
     // Runner sample check
     public static void main(String[] args) {
-        byte [] a = new byte[6];
-        a[0] = 0;
-        a[1] = 1;
-        a[2] = 'a';
-        a[3] = 0;
-        a[4] = 'b';
-        a[5] = 0;
+        List<String> userList = new LinkedList<String>();
+        userList.add("user1");
+        userList.add("user2");
+        String postingUser = "alon";
+        String content = "message content";
+        UserListACK userListACK = new UserListACK(2,userList);
+
+//        byte [] a = new byte[6];
+//        a[0] = 0;
+//        a[1] = 1;
+//        a[2] = 'a';
+//        a[3] = 0;
+//        a[4] = 'b';
+//        a[5] = 0;
 //        a[7] = 'b';
 //        a[8] = 0;
 //        a[9] = 'c';
@@ -191,10 +316,12 @@ public class MessageEncoderDecoderImpl implements MessageEncoderDecoder<Command>
 
 
         MessageEncoderDecoderImpl messageEncoderDecoder = new MessageEncoderDecoderImpl();
-        for (byte b : a) {
-            messageEncoderDecoder.decodeNextByte(b);
-        }
-        messageEncoderDecoder.decodeNextByte((byte) '\n');
+
+        messageEncoderDecoder.encode(userListACK);
+//        for (byte b : a) {
+//            messageEncoderDecoder.decodeNextByte(b);
+//        }
+//        messageEncoderDecoder.decodeNextByte((byte) '\n');
 
     }
 }
