@@ -5,7 +5,6 @@ import bgu.spl.net.api.bidi.Command;
 public class PM extends Command {
 
     // Fields
-    private int op_code;
     private String userName;
     private String content;
 

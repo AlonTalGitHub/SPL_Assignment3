@@ -7,7 +7,6 @@ import java.util.List;
 public class Follow extends Command {
 
     // Fields
-    private int op_code;
     private int follow;
     private int numFoUsers;
     private List<String> userNameList;
